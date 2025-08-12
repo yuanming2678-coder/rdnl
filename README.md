@@ -1,4 +1,4 @@
-# CONFIDENTIAL AND PROPRIETARY CODE
+**# CONFIDENTIAL AND PROPRIETARY CODE
 # =====================================================================
 # Copyright (c) 2025 [Yuan Ming Yu]. All rights reserved.
 # This code is confidential and proprietary to [Yuan Ming Yu].
@@ -11,7 +11,7 @@
 #
 # For any inquiries regarding usage or licensing, please contact:
 # [Contact Information or Legal Team Email]
-# =====================================================================
+# =====================================================================**
 
 Author: Yuan Ming Yu
 Date: 2025/08/01
