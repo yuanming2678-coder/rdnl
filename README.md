@@ -18,8 +18,8 @@ Date: 2025/08/01
 Description: Read spice netlist into Python class object for postproceesing
 
 Hierarchy Description:
-&nbsp|_ rdnl: Top-level package<br>
-&nbsp&nbsp|_ func.py: Function only<br>
+&nbsp;|_ rdnl: Top-level package<br>
+&nbsp;&nbsp;|_ func.py: Function only<br>
 &nbsp&nbsp|_ core.py: Class definition with methods<br>
 &nbsp&nbsp|_ api.py: RDNL APIs<br>
 &nbsp&nbsp|_ globalvar.py: Global variables across modules<br>
