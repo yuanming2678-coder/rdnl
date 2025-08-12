@@ -18,33 +18,33 @@ Date: 2025/08/01
 Description: Read spice netlist into Python class object for postproceesing
 
 Hierarchy Description:
-&emsp|_ rdnl: Top-level package<br>
-&emsp&emsp|_ func.py: Function only<br>
-&emsp&emsp|_ core.py: Class definition with methods<br>
-&emsp&emsp|_ api.py: RDNL APIs<br>
-&emsp&emsp|_ globalvar.py: Global variables across modules
-&emsp&emsp|_ test: Testing directory
-			|_ test_rdnl.py: Pytest
-			|_ out: Output file directory
-			|_ ref: Reference file directory
+&nbsp|_ rdnl: Top-level package<br>
+&nbsp&nbsp|_ func.py: Function only<br>
+&nbsp&nbsp|_ core.py: Class definition with methods<br>
+&nbsp&nbsp|_ api.py: RDNL APIs<br>
+&nbsp&nbsp|_ globalvar.py: Global variables across modules<br>
+&nbsp&nbsp|_ test: Testing directory<br>
+&nbsp&nbsp&nbsp|_ test_rdnl.py: Pytest<br>
+&nbsp&nbsp&nbsp|_ out: Output file directory<br>
+&nbsp&nbsp&nbsp|_ ref: Reference file directory<br>
 
 Python3 path: /usr/bin/python3
 
-Used library:
-	- sys
-	- os
-	- re
-	- time
-	- tracemalloc
-	- subprocess
+Used library:<br>
+&nbsp- sys<br>
+&nbsp- os<br>
+&nbsp- re<br>
+&nbsp- time<br>
+&nbsp- tracemalloc<br>
+&nbsp- subprocess<br>
 
-Usage:
-	python3 -m pydoc rdnl
-	python3 -m pydoc rdnl.api
-	python3 -m pydoc rdnl.core
+Usage:<br>
+&nbsppython3 -m pydoc rdnl<br>
+&nbsppython3 -m pydoc rdnl.api<br>
+&nbsppython3 -m pydoc rdnl.core<br>
 
-Example:
-	./test/test_rdnl.py
+Example:<br>
+&nbsp./test/test_rdnl.py
 
-Contact:
-	Email: yuanming2678@gmail.com
+Contact:<br>
+&nbspEmail: yuanming2678@gmail.com
