@@ -120,6 +120,7 @@ def parse_netlist(file_path):
 				inst.master = master
 			else:
 				inst.is_pri = True
+		subckt.netlist = netlist
 	return netlist
 
 # ---------------------------------------------------------------------

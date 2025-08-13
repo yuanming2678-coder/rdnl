@@ -18,7 +18,7 @@
 # Date			: 2025/08/01
 # Description	: Read spice netlist into Python object (testing)
 # =====================================================================
-import sys, os, time, tracemalloc, subprocess as sp
+import sys, os, time, copy, tracemalloc, subprocess as sp
 sys.path.append('../..')
 import rdnl
 
@@ -26,6 +26,8 @@ time_start = time.time()
 tracemalloc.start()
 netlist_path = '../netlist/alu4_logic_netlist.sp'
 netlist = rdnl.api.rd_netlist(netlist_path)
+os.system('rm -rf out')
+os.makedirs('out')
 
 # subckt
 subckt_name = 'XOR2'
@@ -89,6 +91,11 @@ str_inst_path_inv = 'xalu4.x123'
 inst_path_inv = netlist.get_path(str_inst_path_inv)
 top_inst_path_inv = netlist.get_top_path(inst_path_inv)
 up_inst_path_inv = netlist.get_up_path(inst_path_inv)
+
+# short net to net
+short_subckt_name = 'ALU4'
+short_master_net = 'A1'
+short_slave_net = 'A0'
 
 # ---------------------------------------------------------------------
 # Class: netlist
@@ -195,6 +202,16 @@ def test_netlist_get_net_paths():
 	assert not diff
 	assert not diff_inv
 
+def test_netlist_short_by_term():
+	copy_netlist = copy.deepcopy(netlist)
+	copy_netlist.short_by_term('resistor', [0, 1])
+	copy_netlist.short_by_term(subckt_name, [0, 1, 2])
+	file_name = subckt_name + '_res_short_by_term'
+	with open(f'out/{file_name}', 'w') as f:
+		copy_netlist.write(f)
+	diff = sp.getoutput(f'diff out/{file_name} ref/{file_name}')
+	assert not diff
+
 # ---------------------------------------------------------------------
 # Class: subckt
 # ---------------------------------------------------------------------
@@ -205,6 +222,16 @@ def test_subckt_get_inst():
 def test_subckt_has_net():
 	assert netlist.top_subckt.has_net(net)
 	assert not netlist.top_subckt.has_net(net_inv)
+
+def test_subckt_replace_net():
+	copy_netlist = copy.deepcopy(netlist)
+	short_subckt = copy_netlist.get_subckt(short_subckt_name)
+	short_subckt.replace_net(short_master_net, short_slave_net)
+	file_name = short_subckt_name + '_replace_net'
+	with open(f'out/{file_name}', 'w') as f:
+		copy_netlist.write(f)
+	diff = sp.getoutput(f'diff out/{file_name} ref/{file_name}')
+	assert not diff
 
 # ---------------------------------------------------------------------
 # performance

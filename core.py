@@ -86,7 +86,7 @@ class netlist():
 		Return:
 			Instance/net path
 		'''
-		return self.top_subckt.get_path(self, path)
+		return self.top_subckt.get_path(path)
 
 	def write(self, f, max_len = 80):
 		'''
@@ -222,6 +222,36 @@ class netlist():
 			path = top_net_path[:-1]
 		yield from self._get_net_paths_rcs(subckt, net, path)
 
+	def short_by_term(self, master, terms):
+		'''
+		Description:
+			Short instance master on all specified terminals
+		Args:
+			Master name
+			Terminals
+		Return:
+			None
+		'''
+		for subckt in self.subckts:
+			nets = []
+			for inst in list(subckt.insts):
+				if str(inst.master) == master:
+					nets += [inst.nets[t] for t in terms]
+					subckt.insts.remove(inst)
+			if nets:
+				win_net = self._get_win_net(nets)
+				for inst in subckt.insts:
+					for i in range(len(inst.nets)):
+						if inst.nets[i] in nets:
+							inst.nets[i] = win_net
+
+	def _get_win_net(self, nets):
+		globals = [net for net in nets if net in self.globals]
+		if globals:
+			return max(globals)
+		else:
+			return max(nets)
+
 	def _get_net_paths_rcs(self, subckt, port, path):
 		yield path + [port]
 		for inst in subckt.insts:
@@ -292,6 +322,7 @@ class subckt():
 		ports		: Subckt ports
 		insts		: All instances under subckt
 		attr		: Subckt attributes
+		netlist		: Netlist
 	'''
 
 	def __init__(self, name, ports, insts, attr):
@@ -299,6 +330,7 @@ class subckt():
 		self.ports = ports
 		self.insts = sorted(insts, key = lambda inst:inst.name)
 		self.attr = attr
+		self.netlist = None
 
 	def __repr__(self):
 		return self.name
@@ -343,7 +375,7 @@ class subckt():
 			inst.write(f)
 		f.write('.ends ' + self.name + '\n')
 
-	def get_path(self, netlist, path):
+	def get_path(self, path):
 		'''
 		Description:
 			Get instance/net path under subckt from string path
@@ -354,7 +386,7 @@ class subckt():
 		'''
 		subckt = self
 		inst_path = []
-		path = path.split(netlist.deli)
+		path = path.split(self.netlist.deli)
 		for hier in path:
 			inst = subckt.get_inst(hier)
 			if inst:
@@ -380,6 +412,21 @@ class subckt():
 			if net in inst.nets:
 				return True
 		return False
+
+	def replace_net(self, master_net, slave_net):
+		'''
+		Description:
+			Replace subckt slave net by master net
+		Args:
+			Net name (master)
+			Net name (slave)
+		Return:
+			None
+		'''
+		for inst in self.insts:
+			for i in range(len(inst.nets)):
+				if inst.nets[i] == slave_net:
+					inst.nets[i] = master_net
 
 	def _sort_inst(self):
 		self.insts = sorted(self.insts, key = lambda inst:inst.name)
