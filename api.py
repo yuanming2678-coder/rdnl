@@ -20,11 +20,12 @@
 # =====================================================================
 import os
 import rdnl.func as func
+import rdnl.vsnl as vsnl
 
 # ---------------------------------------------------------------------
 # read netlist
 # ---------------------------------------------------------------------
-def rd_netlist(file_path, rowcmt = '*', inline = '$'):
+def read_netlist(file_path, rowcmt = '*', inline = '$'):
 	'''
 	Description:
 		Read Spice netlist
@@ -37,5 +38,18 @@ def rd_netlist(file_path, rowcmt = '*', inline = '$'):
 	tmp_file_path = '/tmp/' + os.path.basename(file_path) + '.tmp'
 	func.proc_netlist(file_path, tmp_file_path, rowcmt, inline)
 	os.system(f'sed -i \'1d\' {tmp_file_path}')
-	netlist = func.parse_netlist(tmp_file_path)
+	netlist = func.parse_netlist(tmp_file_path, file_path)
 	return netlist
+
+# ---------------------------------------------------------------------
+# show netlist in GUI
+# ---------------------------------------------------------------------
+def show_netlist(netlist):
+	'''
+	Description:
+		Visualize netlist in GUI
+	Args:
+		Netlist
+	Return:
+	'''
+	vsnl.vsnl_gui(netlist)

@@ -19,6 +19,8 @@
 # Description	: Read spice netlist into Python object (core class only)
 # =====================================================================
 import rdnl.func as func
+import schemdraw
+import schemdraw.elements as elm
 
 # ---------------------------------------------------------------------
 # Class: netlist
@@ -95,7 +97,6 @@ class netlist():
 		Args:
 			File handler
 		Return:
-			None
 		'''
 		if self.globals:
 			f.write('.global ' + ' '.join(self.globals) + '\n\n')
@@ -230,7 +231,6 @@ class netlist():
 			Master name
 			Terminals
 		Return:
-			None
 		'''
 		for subckt in self.subckts:
 			nets = []
@@ -363,7 +363,6 @@ class subckt():
 		Args:
 			File handler
 		Return:
-			None
 		'''
 		line = f'.subckt {self.name}'
 		for port in self.ports:
@@ -421,12 +420,105 @@ class subckt():
 			Net name (master)
 			Net name (slave)
 		Return:
-			None
 		'''
 		for inst in self.insts:
 			for i in range(len(inst.nets)):
 				if inst.nets[i] == slave_net:
 					inst.nets[i] = master_net
+
+	def show(self, scale = 2.5, offset = 0.5):
+		'''
+		Description:
+			Show subckt connectivity
+		Args:
+		Return:
+		'''
+		insts = {}
+		scale = 2.5
+		d = schemdraw.Drawing()
+		curr_x, curr_y, port_y = scale, 0, 0
+		node_coord, h_line, v_line = {}, {}, {}
+		for inst in self.insts:
+			if str(inst.master) == 'NMOS':
+				nmos = elm.NMos(d='right', at = (curr_x, curr_y), label = inst.name)
+				d.add(nmos)
+				insts[inst] = nmos
+				node_coord[(inst, 0)] = nmos.drain
+				node_coord[(inst, 1)] = nmos.gate
+				node_coord[(inst, 2)] = nmos.source
+				x = nmos.drain[0]
+				if x not in v_line: v_line[x] = []
+				v_line[x].append([nmos.source[1], nmos.drain[1]])
+				y = nmos.gate[1]
+				if y not in h_line: h_line[y] = []
+				h_line[y].append([nmos.gate[0], nmos.drain[0]])
+			elif str(inst.master) == 'PMOS':
+				pmos = elm.PMos(d='right', at = (curr_x, curr_y), label = inst.name)
+				d.add(pmos)
+				insts[inst] = pmos
+				node_coord[(inst, 0)] = pmos.source
+				node_coord[(inst, 1)] = pmos.gate
+				node_coord[(inst, 2)] = pmos.drain
+				x = pmos.source[0]
+				if x not in v_line: v_line[x] = []
+				v_line[x].append([pmos.drain[1], pmos.source[1]])
+				y = pmos.gate[1]
+				if y not in h_line: h_line[y] = []
+				h_line[y].append([pmos.gate[0], pmos.source[0]])
+			if curr_y >= (len(self.ports) - 1) * scale:
+				curr_x += scale
+				curr_y = 0
+			else:
+				curr_y += scale
+		net_to_inst = self._get_net_to_inst()
+		for net in net_to_inst:
+			conn = net_to_inst[net]
+			start_node = conn[0]
+			start_coord = node_coord[start_node]
+			for end_node in conn[1:]:
+				end_coord = node_coord[end_node]
+				self._conn_node(d, start_coord, end_coord, h_line, v_line, offset)
+		d.draw()
+
+	def _conn_node(self, d, start, end, h_line, v_line, offset = 0.5):
+		x1, y1 = start
+		x2, y2 = end
+		while True:
+			if func.has_overlap(y1, y2, x1, v_line):
+				if not func.has_overlap(x1, x1 + offset, y1, h_line):
+					d.add(elm.Line().at((x1, y1)).to((x1 + offset, y1)))
+					if y1 not in h_line: h_line[y1] = []
+					h_line[y1].append([x1, x1 + offset])
+					x1 += offset
+				else:
+					offset = -offset
+			elif func.has_overlap(x1, x2, y1, h_line):
+				if not func.has_overlap(y1, y1 + offset, x1, v_line):
+					d.add(elm.Line().at((x1, y1)).to((x1, y1 + offset)))
+					if x1 not in v_line: v_line[x1] = []
+					v_line[x1].append([y1, y1 + offset])
+					y1 += offset
+				else:
+					offset = -offset
+			else:
+				break
+		d.add(elm.Line().at((x1, y1)).to((x1, y2)))
+		d.add(elm.Line().at((x1, y2)).to((x2, y2)))
+		if x1 not in v_line: v_line[x1] = []
+		v_line[x1].append([y1, y2])
+		if y2 not in h_line: h_line[y2] = []
+		h_line[y2].append([x1, x2])
+
+	def _get_net_to_inst(self):
+		net_to_inst = {}
+		for inst in self.insts:
+			for i in range(len(inst.nets)):
+				net = inst.nets[i]
+				if str(inst.master) in ['NMOS', 'PMOS'] and i == 3: continue
+				if net not in net_to_inst:
+					net_to_inst[net] = []
+				net_to_inst[net].append((inst, i))
+		return net_to_inst
 
 	def _sort_inst(self):
 		self.insts = sorted(self.insts, key = lambda inst:inst.name)
@@ -465,7 +557,6 @@ class inst():
 		Args:
 			File handler
 		Return:
-			None
 		'''
 		line = self.name
 		for net in self.nets:

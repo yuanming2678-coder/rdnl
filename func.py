@@ -21,6 +21,8 @@
 import re
 import rdnl.core as core
 import rdnl.globalvar as gv
+import schemdraw
+import schemdraw.elements as elm
 
 # ---------------------------------------------------------------------
 # process netlist
@@ -73,10 +75,10 @@ def rd_inst_line(words):
 # ---------------------------------------------------------------------
 # parse netlist
 # ---------------------------------------------------------------------
-def parse_netlist(file_path):
+def parse_netlist(file_path, orig_file_path):
 	subckts = {}
 	top_subckt = core.subckt('', [], [], {})
-	netlist = core.netlist(file_path, [], top_subckt, [])
+	netlist = core.netlist(orig_file_path, [], top_subckt, [])
 	rd_subckt, subckt, subckt_name = False, top_subckt, ''
 	for line in open(file_path, 'r'):
 		line = line.strip('\n')
@@ -135,3 +137,22 @@ def get_subckt_dict(netlist):
 			dict[subckt].append(master)
 		dict[subckt] = list(dict.fromkeys(dict[subckt]))
 	return dict
+
+# ---------------------------------------------------------------------
+# line is overlap
+# ---------------------------------------------------------------------
+def is_overlap(l1xy1, l1xy2, l2xy1, l2xy2):
+	l1_xy_max = max(l1xy1, l1xy2)
+	l1_xy_min = min(l1xy1, l1xy2)
+	l2_xy_max = max(l2xy1, l2xy2)
+	l2_xy_min = min(l2xy1, l2xy2)
+	if l1_xy_max >= l2_xy_max:
+		return l2_xy_max > l1_xy_min
+	else:
+		return l1_xy_max > l2_xy_min
+
+# ---------------------------------------------------------------------
+# line has overlap
+# ---------------------------------------------------------------------
+def has_overlap(xy1, xy2, xy, line):
+	return xy in line and any([is_overlap(xy1, xy2, s, e) for s, e in line[xy]])	

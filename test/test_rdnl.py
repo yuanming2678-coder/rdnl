@@ -25,7 +25,7 @@ import rdnl
 time_start = time.time()
 tracemalloc.start()
 netlist_path = '../netlist/alu4_logic_netlist.sp'
-netlist = rdnl.api.rd_netlist(netlist_path)
+netlist = rdnl.api.read_netlist(netlist_path)
 os.system('rm -rf out')
 os.makedirs('out')
 
