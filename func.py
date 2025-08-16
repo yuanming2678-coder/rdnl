@@ -18,11 +18,10 @@
 # Date			: 2025/08/01
 # Description	: Read spice netlist into Python object (function only)
 # =====================================================================
-import re
+import re, schemdraw
+import schemdraw.elements as elm
 import rdnl.core as core
 import rdnl.globalvar as gv
-import schemdraw
-import schemdraw.elements as elm
 
 # ---------------------------------------------------------------------
 # process netlist

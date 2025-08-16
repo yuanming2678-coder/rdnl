@@ -37,6 +37,7 @@ Used Library:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;- re<br>
 &nbsp;&nbsp;&nbsp;&nbsp;- time<br>
 &nbsp;&nbsp;&nbsp;&nbsp;- copy<br>
+&nbsp;&nbsp;&nbsp;&nbsp;- schemdraw<br>
 &nbsp;&nbsp;&nbsp;&nbsp;- tracemalloc<br>
 &nbsp;&nbsp;&nbsp;&nbsp;- subprocess<br>
 
@@ -44,6 +45,7 @@ Usage:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;python3 -m pydoc rdnl<br>
 &nbsp;&nbsp;&nbsp;&nbsp;python3 -m pydoc rdnl.api<br>
 &nbsp;&nbsp;&nbsp;&nbsp;python3 -m pydoc rdnl.core<br>
+&nbsp;&nbsp;&nbsp;&nbsp;python3 ./rdnl/vsnl.py [netlist]<br>
 
 Example:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;./test/test_rdnl.py<br>
