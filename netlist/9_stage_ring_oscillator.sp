@@ -5,6 +5,11 @@
 .SUBCKT INV IN OUT VDD GND Wn=1u Wp=2u L=0.18u
 M1 OUT IN GND GND NMOS W={Wn} L={L}
 M2 OUT IN VDD VDD PMOS W={Wp} L={L}
+r1 OUT GND 1k
+c1 OUT GND 1f
+l1 OUT GND 1n
+v1 OUT GND 2.2
+i1 OUT GND 1n
 .ENDS INV
 
 ********************************************

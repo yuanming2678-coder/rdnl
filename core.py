@@ -21,6 +21,7 @@
 import schemdraw
 import schemdraw.elements as elm
 import rdnl.func as func
+import rdnl.globalvar as gv
 
 # ---------------------------------------------------------------------
 # Class: netlist
@@ -45,6 +46,9 @@ class netlist():
 		self.subckts = sorted(subckts, key = lambda subckt:subckt.name)
 		self.vcc = ['vcc', 'vdd']
 		self.gnd = ['gnd', 'vss']
+		self.nmos = ['nmos']
+		self.pmos = ['pmos']
+		self.linear = ['resistor', 'capacitor', 'inductor', 'voltage', 'current']
 
 	def __repr__(self):
 		return self.path
@@ -439,43 +443,51 @@ class subckt():
 		'''
 		nets = []
 		d = schemdraw.Drawing()
+		d.add(elm.Label().label(f'subckt:{self.name}').at((0, -scale * 0.5)))
 		curr_x, curr_y, port_y, global_y = scale * 1.5, 0, 0, 0
-		node_coord, h_ln, v_ln = {}, {}, {}
+		coords, h_ln, v_ln = {}, {}, {}
+		nmos, pmos = self.netlist.nmos, self.netlist.pmos
 		for inst in self.insts:
-			if str(inst.master) == 'NMOS':
-				nmos = elm.NMos(d='right', at = (curr_x, curr_y), label = inst.name)
-				d.add(nmos)
-				node_coord[(inst, 0)] = nmos.drain
-				node_coord[(inst, 1)] = nmos.gate
-				node_coord[(inst, 2)] = nmos.source
-				x = nmos.drain[0]
-				y = nmos.gate[1]
+			master = inst.master if inst.is_pri else inst.master.name
+			master = master.lower()
+			if master in nmos + pmos:
+				is_nmos = master in nmos
+				dev = func.get_schemdraw_elm(master, nmos, pmos)
+				dev.right().at((curr_x, curr_y))
+				dev.label(inst.name, loc = 'right')
+				d.add(dev)
+				coords[(inst, 0)] = dev.drain if is_nmos else dev.source
+				coords[(inst, 1)] = dev.gate
+				coords[(inst, 2)] = dev.source if is_nmos else dev.drain
+				x, y = dev.drain[0], dev.gate[1]
 				if x not in v_ln: v_ln[x] = []
 				if y not in h_ln: h_ln[y] = []
-				v_ln[x].append([nmos.source[1], nmos.drain[1]])
-				h_ln[y].append([nmos.gate[0], nmos.drain[0]])
-			elif str(inst.master) == 'PMOS':
-				pmos = elm.PMos(d='right', at = (curr_x, curr_y), label = inst.name)
-				d.add(pmos)
-				node_coord[(inst, 0)] = pmos.source
-				node_coord[(inst, 1)] = pmos.gate
-				node_coord[(inst, 2)] = pmos.drain
-				x = pmos.source[0]
-				y = pmos.gate[1]
-				if x not in v_ln: v_ln[x] = []
+				v_ln[x].append([dev.source[1], dev.drain[1]])
+				h_ln[y].append([dev.gate[0], dev.drain[0]])
+			elif any([master == i for i in self.netlist.linear]):
+				dev = func.get_schemdraw_elm(master)
+				value = inst.attr['val']
+				dev.right().at((curr_x, curr_y))
+				dev.label(inst.name, loc = 'top')
+				dev.label(value, loc = 'bottom')
+				d.add(dev)
+				y = dev.start[1]
 				if y not in h_ln: h_ln[y] = []
-				v_ln[x].append([pmos.drain[1], pmos.source[1]])
-				h_ln[y].append([pmos.gate[0], pmos.source[0]])
+				h_ln[y].append([dev.start[0], dev.end[0]])
+				coords[(inst, 0)] = dev.start
+				coords[(inst, 1)] = dev.end
 			if curr_y >= (len(self.ports) - 1) * scale:
 				curr_x += scale
 				curr_y = 0
 			else:
 				curr_y += scale
 		net_to_inst = self._get_net_to_inst()
+		vcc, gnd = self.netlist.vcc, self.netlist.gnd
 		for net in net_to_inst:
+			net_low = net.lower()
 			conn = net_to_inst[net]
 			s_node = conn[0]
-			s_coord = node_coord[s_node]
+			s_coord = coords[s_node]
 			if net in self.ports and net not in nets:
 				quotient = (len(nets) + 1) / len(self.ports)
 				l_coord = (scale * 0.5 * quotient, port_y)
@@ -485,37 +497,32 @@ class subckt():
 				self._conn_node(d, l_coord, s_coord, h_ln, v_ln, offset)
 				nets.append(net)
 				port_y += scale * 0.5
-			if any([i.lower() == net.lower() for i in self.netlist.vcc]):
+			if any([i == net_low for i in vcc + gnd]):
+				is_vcc = any([i == net_low for i in vcc])
 				global_x = scale * 0.75
-				vcc_coord = (global_x, global_y)
-				vcc = elm.Vdd().right().at(vcc_coord)
-				d.add(vcc)
+				r_coord = (global_x, global_y)
+				rail = func.get_schemdraw_elm(net_low, vcc = vcc, gnd = gnd)
+				rail.right().at(r_coord)
+				rail.label(net, loc = 'top')
+				d.add(rail)
 				if global_x not in v_ln: v_ln[global_x] = []
-				v_ln[global_x].append([global_y, global_y + 0.5])
-				self._conn_node(d, s_coord, vcc_coord, h_ln, v_ln, offset)
-				global_y += scale * 0.5
-			elif any([i.lower() == net.lower() for i in self.netlist.gnd]):
-				global_x = scale * 0.75
-				gnd_coord = (global_x, global_y)
-				gnd = elm.Ground().right().at(gnd_coord)
-				d.add(gnd)
-				if global_x not in v_ln: v_ln[global_x] = []
-				v_ln[global_x].append([global_y, global_y - 0.5])
-				self._conn_node(d, s_coord, gnd_coord, h_ln, v_ln, offset)
+				y_diff = 0.5 if is_vcc else -0.5
+				v_ln[global_x].append([global_y, global_y + y_diff])
+				self._conn_node(d, s_coord, r_coord, h_ln, v_ln, offset)
 				global_y += scale * 0.5
 			for e_node in conn[1:]:
-				e_coord = node_coord[e_node]
-				self._conn_node(d, s_coord, e_coord, h_ln, v_ln, offset, node_coord, s_node)
-				s_coord = node_coord[s_node]
+				e_coord = coords[e_node]
+				self._conn_node(d, s_coord, e_coord, h_ln, v_ln, offset, coords, s_node)
+				s_coord = coords[s_node]
 		if save_path:
 			d.save(save_path)
 		else:
 			d.draw()
 
-	def _conn_node(self, d, start, end, h_ln, v_ln, offset = 0.5, coord = None, node = None):
+	def _conn_node(self, d, start, end, h_ln, v_ln, offset = 0.5, coords = None, node = None):
+		count = 0
 		x1, y1 = start
 		x2, y2 = end
-		count = 0
 		while True:
 			if count >= 10: break
 			if func.has_overlap(x1, x2, y1, h_ln):
@@ -525,15 +532,15 @@ class subckt():
 					v_ln[x1].append([y1, y1 + offset])
 					y1 += offset
 				else:
-					offset = -offset
-			elif func.has_overlap(y1, y2, x2, v_ln):
+					offset *= -1.1
+			if func.has_overlap(y1, y2, x2, v_ln):
 				if not func.has_overlap(x2, x2 + offset, y2, h_ln):
 					d.add(elm.Line().at((x2, y2)).to((x2 + offset, y2)))
 					if y2 not in h_ln: h_ln[y2] = []
 					h_ln[y2].append([x2, x2 + offset])
 					x2 += offset
 				else:
-					offset = -offset
+					offset *= -1.1
 			else:
 				break
 			count += 1
@@ -543,7 +550,7 @@ class subckt():
 		if y1 not in h_ln: h_ln[y1] = []
 		v_ln[x2].append([y1, y2])
 		h_ln[y1].append([x1, x2])
-		if node: coord[node] = (x1, y1)
+		if node: coords[node] = (x1, y1)
 
 	def _get_net_to_inst(self):
 		net_to_inst = {}

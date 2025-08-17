@@ -155,3 +155,30 @@ def is_overlap(l1xy1, l1xy2, l2xy1, l2xy2):
 # ---------------------------------------------------------------------
 def has_overlap(xy1, xy2, xy, line):
 	return xy in line and any([is_overlap(xy1, xy2, s, e) for s, e in line[xy]])	
+
+# ---------------------------------------------------------------------
+# get schemdraw element
+# ---------------------------------------------------------------------
+def get_schemdraw_elm(name, nmos = None, pmos = None, vcc = None, gnd = None):
+	if not nmos: nmos = []
+	if not pmos: pmos = []
+	if not vcc: vcc = []
+	if not gnd: gnd = []
+	if name == 'resistor':
+		return elm.Resistor()
+	elif name == 'capacitor':
+		return elm.Capacitor()
+	elif name == 'inductor':
+		return elm.Inductor()
+	elif name == 'voltage':
+		return elm.SourceV()
+	elif name == 'current':
+		return elm.SourceI()
+	elif name in nmos:
+		return elm.NMos()
+	elif name in pmos:
+		return elm.PMos()
+	elif name in vcc:
+		return elm.Vdd()
+	elif name in gnd:
+		return elm.Ground()
