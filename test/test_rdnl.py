@@ -102,6 +102,8 @@ show_subckt_name_1 = 'AND2'
 show_subckt_1 = netlist.get_subckt(show_subckt_name_1)
 show_subckt_name_2 = 'NOT'
 show_subckt_2 = netlist.get_subckt(show_subckt_name_2)
+show_subckt_name_3 = 'MUX2'
+show_subckt_3 = netlist.get_subckt(show_subckt_name_3)
 
 # ---------------------------------------------------------------------
 # Class: netlist
@@ -242,12 +244,16 @@ def test_subckt_replace_net():
 def test_subckt_show():
 	file_name_1 = show_subckt_name_1 + '_show.jpg'
 	file_name_2 = show_subckt_name_2 + '_show.jpg'
-	show_subckt_1.show(3, 1, f'out/{file_name_1}')
-	show_subckt_2.show(3, 1, f'out/{file_name_2}')
+	file_name_3 = show_subckt_name_3 + '_show.jpg'
+	show_subckt_1.show(2, 0.5, f'out/{file_name_1}')
+	show_subckt_2.show(2, 0.5, f'out/{file_name_2}')
+	show_subckt_3.show(2, 0.5, f'out/{file_name_3}')
 	diff_1 = sp.getoutput(f'diff out/{file_name_1} ref/{file_name_1}')
 	diff_2 = sp.getoutput(f'diff out/{file_name_2} ref/{file_name_2}')
+	diff_3 = sp.getoutput(f'diff out/{file_name_3} ref/{file_name_3}')
 	assert not diff_1
 	assert not diff_2
+	assert not diff_3
 
 # ---------------------------------------------------------------------
 # performance

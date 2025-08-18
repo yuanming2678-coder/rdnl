@@ -493,14 +493,13 @@ class subckt():
 			s_node = conn[0]
 			s_coord = coords[s_node]
 			if net in self.ports and net not in nets:
-				quotient = (len(nets) + 1) / len(self.ports)
-				l_coord = (scale * 0.5 * quotient, port_y)
-				d.add(elm.Line(label = net).at((0, port_y)).to(l_coord))
+				l_coord = (0, port_y)
+				d.add(elm.Line(label = net).at((-scale, port_y)).to(l_coord))
 				if port_y not in h_ln: h_ln[port_y] = []
 				h_ln[port_y].append([0, scale * 0.5])
 				self._conn_node(d, l_coord, s_coord, h_ln, v_ln, offset)
 				nets.append(net)
-				port_y += scale * 0.5
+				port_y += scale
 			if any([i == net_low for i in vcc + gnd]):
 				is_vcc = any([i == net_low for i in vcc])
 				global_x = scale * 0.75
@@ -513,7 +512,7 @@ class subckt():
 				y_diff = 0.5 if is_vcc else -0.5
 				v_ln[global_x].append([global_y, global_y + y_diff])
 				self._conn_node(d, s_coord, r_coord, h_ln, v_ln, offset)
-				global_y += scale * 0.5
+				global_y += scale
 			for e_node in conn[1:]:
 				e_coord = coords[e_node]
 				self._conn_node(d, s_coord, e_coord, h_ln, v_ln, offset, coords, s_node)
@@ -553,11 +552,13 @@ class subckt():
 			count += 1
 		d.add(elm.Line().at((x1, y1)).to((x2, y1)))
 		d.add(elm.Line().at((x2, y1)).to((x2, y2)))
+		d.add(elm.Dot().at((x1, y1)))
 		if x2 not in v_ln: v_ln[x2] = []
 		if y1 not in h_ln: h_ln[y1] = []
 		v_ln[x2].append([y1, y2])
 		h_ln[y1].append([x1, x2])
-		if node: coords[node] = (x1, y1)
+		if node:
+			coords[node] = (x1, y1)
 
 	def _get_net_to_inst(self):
 		net_to_inst = {}

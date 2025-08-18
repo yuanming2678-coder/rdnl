@@ -154,7 +154,7 @@ def is_overlap(l1xy1, l1xy2, l2xy1, l2xy2):
 # line has overlap
 # ---------------------------------------------------------------------
 def has_overlap(xy1, xy2, xy, line):
-	return xy in line and any([is_overlap(xy1, xy2, s, e) for s, e in line[xy]])	
+	return xy in line and any([is_overlap(xy1, xy2, s, e) for s, e in line[xy]])
 
 # ---------------------------------------------------------------------
 # get schemdraw element
@@ -198,10 +198,10 @@ def get_schemdraw_inst(inst, d, x, y, coords, v_ln, h_ln):
 	ll = (x, y - dy)
 	ur = (x + dx, y)
 	lr = (x + dx, y - dy)
-	d.add(elm.Line().at(ul).to(ur).label(subckt.name, loc = 'bot'))
-	d.add(elm.Line().at(ur).to(lr))
-	d.add(elm.Line().at(lr).to(ll).label(inst.name, loc = 'top'))
-	d.add(elm.Line().at(ll).to(ul))
+	d.add(elm.Line().linestyle('--').at(ul).to(ur).label(subckt.name, loc = 'bot'))
+	d.add(elm.Line().linestyle('--').at(ur).to(lr))
+	d.add(elm.Line().linestyle('--').at(lr).to(ll).label(inst.name, loc = 'top'))
+	d.add(elm.Line().linestyle('--').at(ll).to(ul))
 	if x not in v_ln: v_ln[x] = []
 	if (x + dx) not in v_ln: v_ln[x + dx] = []
 	if y not in h_ln: h_ln[y] = []
@@ -214,20 +214,24 @@ def get_schemdraw_inst(inst, d, x, y, coords, v_ln, h_ln):
 		port = subckt.ports[i]
 		left = i % 2 == 0
 		net_dy = (i // 2 + 1) * offset
-		net_y = port_y = y - net_dy
+		net_y = dot_y = port_y = y - net_dy
+		row = i // 2
 		if left:
-			net_x = x - 0.75
-			port_x = x + 0.25
+			net_x = x - offset - row * offset
+			dot_x = x - (1/3) * offset
+			port_x = x + (1/3) * offset
 		else:
-			net_x = x + dx + 0.75
-			port_x = x + dx - 0.25
+			net_x = x + dx + offset + row * offset
+			dot_x = x + dx + (1/3) * offset
+			port_x = x + dx - (1/3) * offset
 		n_coord = (net_x, net_y)
+		d_coord = (dot_x, dot_y)
 		p_coord = (port_x, port_y)
 		if port_y not in h_ln: h_ln[port_y] = []
-		h_ln[port_y].append([x - 0.75, x + dx + 0.75])
+		h_ln[port_y].append([x - offset, x + dx + offset])
 		coords[(inst, i)] = n_coord
 		line = elm.Line().at(n_coord).to(p_coord)
 		loc = 'right' if left else 'left'
-		d.add(elm.Dot().at(n_coord))
+		d.add(elm.Dot().at(d_coord))
 		d.add(elm.Line().at(n_coord).to(p_coord).label(port, loc = loc))
 	return dx, dy
