@@ -476,6 +476,10 @@ class subckt():
 				h_ln[y].append([dev.start[0], dev.end[0]])
 				coords[(inst, 0)] = dev.start
 				coords[(inst, 1)] = dev.end
+			else:
+				dx, dy = func.get_schemdraw_inst(inst, d, curr_x, curr_y, coords, v_ln, h_ln)
+				curr_x += dx
+				curr_y += dy
 			if curr_y >= (len(self.ports) - 1) * scale:
 				curr_x += scale
 				curr_y = 0
@@ -524,8 +528,10 @@ class subckt():
 		x1, y1 = start
 		x2, y2 = end
 		while True:
+			overlap = False
 			if count >= 10: break
 			if func.has_overlap(x1, x2, y1, h_ln):
+				overlap = True
 				if not func.has_overlap(y1, y1 + offset, x1, v_ln):
 					d.add(elm.Line().at((x1, y1)).to((x1, y1 + offset)))
 					if x1 not in v_ln: v_ln[x1] = []
@@ -534,6 +540,7 @@ class subckt():
 				else:
 					offset *= -1.1
 			if func.has_overlap(y1, y2, x2, v_ln):
+				overlap = True
 				if not func.has_overlap(x2, x2 + offset, y2, h_ln):
 					d.add(elm.Line().at((x2, y2)).to((x2 + offset, y2)))
 					if y2 not in h_ln: h_ln[y2] = []
@@ -541,7 +548,7 @@ class subckt():
 					x2 += offset
 				else:
 					offset *= -1.1
-			else:
+			if not overlap:
 				break
 			count += 1
 		d.add(elm.Line().at((x1, y1)).to((x2, y1)))

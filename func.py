@@ -182,3 +182,52 @@ def get_schemdraw_elm(name, nmos = None, pmos = None, vcc = None, gnd = None):
 		return elm.Vdd()
 	elif name in gnd:
 		return elm.Ground()
+
+# ---------------------------------------------------------------------
+# get schemdraw instance
+# ---------------------------------------------------------------------
+def get_schemdraw_inst(inst, d, x, y, coords, v_ln, h_ln):
+	offset = 0.75
+	inst_x = 1.5
+	subckt = inst.master
+	port_num = len(subckt.ports)
+	side_num = int(port_num / 2) + (port_num % 2 > 0)
+	dx = (side_num + 1) * inst_x
+	dy = (side_num + 1) * offset
+	ul = (x, y)
+	ll = (x, y - dy)
+	ur = (x + dx, y)
+	lr = (x + dx, y - dy)
+	d.add(elm.Line().at(ul).to(ur).label(subckt.name, loc = 'bot'))
+	d.add(elm.Line().at(ur).to(lr))
+	d.add(elm.Line().at(lr).to(ll).label(inst.name, loc = 'top'))
+	d.add(elm.Line().at(ll).to(ul))
+	if x not in v_ln: v_ln[x] = []
+	if (x + dx) not in v_ln: v_ln[x + dx] = []
+	if y not in h_ln: h_ln[y] = []
+	if (y + dy) not in h_ln: h_ln[y + dy] = []
+	v_ln[x].append([y - dy, y])
+	v_ln[x + dx].append([y - dy, y])
+	h_ln[y].append([x, x + dx])
+	h_ln[y + dy].append([x, x + dx])
+	for i in range(len(subckt.ports)):
+		port = subckt.ports[i]
+		left = i % 2 == 0
+		net_dy = (i // 2 + 1) * offset
+		net_y = port_y = y - net_dy
+		if left:
+			net_x = x - 0.75
+			port_x = x + 0.25
+		else:
+			net_x = x + dx + 0.75
+			port_x = x + dx - 0.25
+		n_coord = (net_x, net_y)
+		p_coord = (port_x, port_y)
+		if port_y not in h_ln: h_ln[port_y] = []
+		h_ln[port_y].append([x - 0.75, x + dx + 0.75])
+		coords[(inst, i)] = n_coord
+		line = elm.Line().at(n_coord).to(p_coord)
+		loc = 'right' if left else 'left'
+		d.add(elm.Dot().at(n_coord))
+		d.add(elm.Line().at(n_coord).to(p_coord).label(port, loc = loc))
+	return dx, dy
