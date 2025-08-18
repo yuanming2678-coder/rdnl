@@ -22,7 +22,7 @@ import os, sys, tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
-sys_path = os.path.abspath(os.path.dirname(__file__) + '../../../')
+sys_path = os.path.abspath(os.path.dirname(__file__) + '/../')
 sys.path.append(sys_path)
 import rdnl.core as core
 import rdnl.api as api
