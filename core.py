@@ -85,7 +85,7 @@ class netlist():
 				l = m + 1
 		return None
 
-	def get_path(self, path):
+	def get_path_from_str(self, path):
 		'''
 		Description:
 			Get instance/net path from string path
@@ -94,7 +94,7 @@ class netlist():
 		Return:
 			Instance/net path
 		'''
-		return self.top_subckt.get_path(path)
+		return self.top_subckt.get_path_from_str(path)
 
 	def write(self, f, max_len = 80):
 		'''
@@ -148,14 +148,14 @@ class netlist():
 				return net_path[:-2] + [inst.nets[i]]
 		return []
 
-	def get_pri_paths(self, net_path):
+	def get_net_to_pri_paths(self, net_path):
 		'''
 		Description:
-			Get all primitive paths connected to net path
+			Get all primitive paths and terminals connected to net path
 		Args:
 			Net path
 		Return:
-			Generator of instance paths and terminals
+			Generator of primitive paths and terminals
 		'''
 		top_net_path = self.get_top_path(net_path)
 		if not top_net_path:
@@ -166,9 +166,9 @@ class netlist():
 			subckt = self.top_subckt if l == 1 else top_net_path[-2].master
 			net = top_net_path[-1]
 			path = top_net_path[:-1]
-		yield from self._get_pri_paths_rcs(subckt, net, path)
+		yield from self._get_net_to_pri_paths_rcs(subckt, net, path)
 
-	def get_inst_paths(self, subckt_name):
+	def get_subckt_inst_paths(self, subckt_name):
 		'''
 		Description:
 			Get all instance paths from subckt name
@@ -178,7 +178,7 @@ class netlist():
 			Generator of instance paths
 		'''
 		subckt_dict = func.get_subckt_dict(self)
-		yield from self._get_inst_paths_rcs(subckt_name, subckt_dict)
+		yield from self._get_subckt_inst_paths_rcs(subckt_name, subckt_dict)
 
 	def is_same_net(self, net_path_1, net_path_2):
 		'''
@@ -194,7 +194,7 @@ class netlist():
 		top_net_path_2 = self.get_top_path(net_path_2)
 		return top_net_path_1 == top_net_path_2
 
-	def get_net_path(self, inst_path, term):
+	def get_net_path_at_term(self, inst_path, term):
 		'''
 		Description:
 			Get net path connected to instance terminal
@@ -209,7 +209,7 @@ class netlist():
 		else:
 			return inst_path[:-1] + [inst_path[-1].nets[term]]
 
-	def get_net_paths(self, net_path):
+	def get_hier_net_paths(self, net_path):
 		'''
 		Description:
 			Get all net paths across hierarchy on same node
@@ -251,6 +251,45 @@ class netlist():
 						if inst.nets[i] in nets:
 							inst.nets[i] = win_net
 
+	def get_net_to_inst_paths(self, net_path, masters):
+		'''
+		Description:
+			Get all instance/primitive paths and terminals connected
+			to net path with specified masters
+		Args:
+			Net path
+			Master names
+		Return:
+			Generator of instance/primitive paths and terminals
+		'''
+		top_net_path = self.get_top_path(net_path)
+		if not top_net_path:
+			return
+			yield
+		else:
+			l = len(top_net_path)
+			subckt = self.top_subckt if l == 1 else top_net_path[-2].master
+			net = top_net_path[-1]
+			path = top_net_path[:-1]
+		yield from self._get_net_to_inst_paths_rcs(subckt, net, path, masters)
+
+	def _get_net_to_inst_paths_rcs(self, subckt, port, path, masters):
+		for inst in subckt.insts:
+			l = len(inst.nets)
+			if str(inst.master) in masters:
+				terms = []
+				for i in range(l):
+					if inst.nets[i] == port:
+						terms.append(i)
+				if terms:
+					yield path + [inst], terms
+			elif not inst.is_pri:
+				for i in range(l):
+					if inst.nets[i] == port:
+						path.append(inst)
+						yield from self._get_net_to_inst_paths_rcs(inst.master, inst.master.ports[i], path, masters)
+						path.pop()
+
 	def _get_win_net(self, nets):
 		globals = [net for net in nets if net in self.globals]
 		if globals:
@@ -269,7 +308,7 @@ class netlist():
 						yield from self._get_net_paths_rcs(inst.master, inst.master.ports[i], path)
 						path.pop()
 
-	def _get_pri_paths_rcs(self, subckt, port, path):
+	def _get_net_to_pri_paths_rcs(self, subckt, port, path):
 		for inst in subckt.insts:
 			l = len(inst.nets)
 			if inst.is_pri:
@@ -283,10 +322,10 @@ class netlist():
 				for i in range(l):
 					if inst.nets[i] == port:
 						path.append(inst)
-						yield from self._get_pri_paths_rcs(inst.master, inst.master.ports[i], path)
+						yield from self._get_net_to_pri_paths_rcs(inst.master, inst.master.ports[i], path)
 						path.pop()
 
-	def _get_inst_paths_rcs(self, subckt_name, dict, path = []):
+	def _get_subckt_inst_paths_rcs(self, subckt_name, dict, path = []):
 		if subckt_name == '':
 			yield path
 		for upper in dict:
@@ -294,12 +333,12 @@ class netlist():
 				for inst in upper.insts:
 					master = inst.master if inst.is_pri else inst.master.name
 					if master == subckt_name:
-						yield from self._get_inst_paths_rcs(upper.name, dict, [inst] + path)
+						yield from self._get_subckt_inst_paths_rcs(upper.name, dict, [inst] + path)
 
 	def _sort_subckt(self):
 		self.subckts = sorted(self.subckts, key = lambda subckt:subckt.name)
 
-	def _get_pri_paths_rcs(self, subckt, port, path):
+	def _get_net_to_pri_paths_rcs(self, subckt, port, path):
 		for inst in subckt.insts:
 			l = len(inst.nets)
 			if inst.is_pri:
@@ -313,7 +352,7 @@ class netlist():
 				for i in range(l):
 					if inst.nets[i] == port:
 						path.append(inst)
-						yield from self._get_pri_paths_rcs(inst.master, inst.master.ports[i], path)
+						yield from self._get_net_to_pri_paths_rcs(inst.master, inst.master.ports[i], path)
 						path.pop()
 
 # ---------------------------------------------------------------------
@@ -380,7 +419,7 @@ class subckt():
 			inst.write(f)
 		f.write('.ends ' + self.name + '\n')
 
-	def get_path(self, path):
+	def get_path_from_str(self, path):
 		'''
 		Description:
 			Get instance/net path under subckt from string path
@@ -441,12 +480,12 @@ class subckt():
 			Offset of net connection detour
 		Return:
 		'''
-		nets = []
 		d = schemdraw.Drawing()
-		d.add(elm.Label().label(f'subckt:{self.name}').at((0, -scale * 0.5)))
-		curr_x, curr_y, port_y, global_y = scale * 1.5, 0, 0, 0
-		coords, h_ln, v_ln = {}, {}, {}
+		nets, coords, h_ln, v_ln = [], {}, {}, {}
+		curr_x, curr_y, port_y, global_y = scale * 1.5, 0, 0, scale * 0.5
+		vcc, gnd = self.netlist.vcc, self.netlist.gnd
 		nmos, pmos = self.netlist.nmos, self.netlist.pmos
+		d.add(elm.Label().label(f'subckt:{self.name}').at((0, -scale * 0.5)))
 		for inst in self.insts:
 			master = inst.master if inst.is_pri else inst.master.name
 			master = master.lower()
@@ -471,11 +510,11 @@ class subckt():
 				dev.label(inst.name, loc = 'top')
 				dev.label(value, loc = 'bottom')
 				d.add(dev)
+				coords[(inst, 0)] = dev.end
+				coords[(inst, 1)] = dev.start
 				y = dev.start[1]
 				if y not in h_ln: h_ln[y] = []
 				h_ln[y].append([dev.start[0], dev.end[0]])
-				coords[(inst, 0)] = dev.start
-				coords[(inst, 1)] = dev.end
 			else:
 				dx, dy = func.get_schemdraw_inst(inst, d, curr_x, curr_y, coords, v_ln, h_ln)
 				curr_x += dx
@@ -486,23 +525,21 @@ class subckt():
 			else:
 				curr_y += scale
 		net_to_inst = self._get_net_to_inst()
-		vcc, gnd = self.netlist.vcc, self.netlist.gnd
 		for net in net_to_inst:
 			net_low = net.lower()
-			conn = net_to_inst[net]
-			s_node = conn[0]
+			s_node = net_to_inst[net][0]
 			s_coord = coords[s_node]
 			if net in self.ports and net not in nets:
 				l_coord = (0, port_y)
-				d.add(elm.Line(label = net).at((-scale, port_y)).to(l_coord))
+				d.add(elm.Line(label = net).at((-scale * 0.5, port_y)).to(l_coord))
 				if port_y not in h_ln: h_ln[port_y] = []
-				h_ln[port_y].append([0, scale * 0.5])
+				h_ln[port_y].append([-scale * 0.5, 0])
 				self._conn_node(d, l_coord, s_coord, h_ln, v_ln, offset)
 				nets.append(net)
 				port_y += scale
 			if any([i == net_low for i in vcc + gnd]):
 				is_vcc = any([i == net_low for i in vcc])
-				global_x = scale * 0.75
+				global_x = scale * 0.5
 				r_coord = (global_x, global_y)
 				rail = func.get_schemdraw_elm(net_low, vcc = vcc, gnd = gnd)
 				rail.right().at(r_coord)
@@ -513,7 +550,7 @@ class subckt():
 				v_ln[global_x].append([global_y, global_y + y_diff])
 				self._conn_node(d, s_coord, r_coord, h_ln, v_ln, offset)
 				global_y += scale
-			for e_node in conn[1:]:
+			for e_node in net_to_inst[net][1:]:
 				e_coord = coords[e_node]
 				self._conn_node(d, s_coord, e_coord, h_ln, v_ln, offset, coords, s_node)
 				s_coord = coords[s_node]

@@ -56,31 +56,31 @@ net_inv = 'a5'
 str_net_path = 'xalu4.XFA1.A'
 str_up_path = 'xalu4.A1'
 str_top_path = 'a1'
-net_path = netlist.get_path(str_net_path)
+net_path = netlist.get_path_from_str(str_net_path)
 top_net_path = netlist.get_top_path(net_path)
 up_net_path = netlist.get_up_path(net_path)
 
 # net path (invalid)
 str_net_path_inv = 'xalu4.XFA2.dummy_inst.dummy_net'
-net_path_inv = netlist.get_path(str_net_path_inv)
+net_path_inv = netlist.get_path_from_str(str_net_path_inv)
 top_net_path_inv = netlist.get_top_path(net_path_inv)
 up_net_path_inv = netlist.get_up_path(net_path_inv)
 
 # primitive path
 str_pri_path = 'xalu4.XMUX2.X2.M1'
-pri_path = netlist.get_path(str_pri_path)
+pri_path = netlist.get_path_from_str(str_pri_path)
 top_pri_path = netlist.get_top_path(pri_path)
 up_pri_path = netlist.get_up_path(pri_path)
 
 # primitive path (invalid)
 str_pri_path_inv = 'xalu4.XMUX2.X2.m123'
-pri_path_inv = netlist.get_path(str_pri_path_inv)
+pri_path_inv = netlist.get_path_from_str(str_pri_path_inv)
 top_pri_path_inv = netlist.get_top_path(pri_path_inv)
 up_pri_path_inv = netlist.get_up_path(pri_path_inv)
 
 # instance path
 str_inst_path = 'xalu4.XNOT1'
-inst_path = netlist.get_path(str_inst_path)
+inst_path = netlist.get_path_from_str(str_inst_path)
 top_inst_path = netlist.get_top_path(inst_path)
 up_inst_path = netlist.get_up_path(inst_path)
 str_inst_path_term_0 = 'xalu4.B1'
@@ -88,7 +88,7 @@ str_inst_path_term_1 = 'xalu4.NB1'
 
 # instance path
 str_inst_path_inv = 'xalu4.x123'
-inst_path_inv = netlist.get_path(str_inst_path_inv)
+inst_path_inv = netlist.get_path_from_str(str_inst_path_inv)
 top_inst_path_inv = netlist.get_top_path(inst_path_inv)
 up_inst_path_inv = netlist.get_up_path(inst_path_inv)
 
@@ -112,7 +112,7 @@ def test_netlist_get_subckt():
 	assert subckt.name == subckt_name
 	assert not subckt_inv
 
-def test_netlist_get_path():
+def test_netlist_get_path_from_str():
 	assert netlist.get_str_path(net_path) == str_net_path
 	assert netlist.get_str_path(net_path_inv) == ''
 	assert netlist.get_str_path(pri_path) == str_pri_path
@@ -143,11 +143,11 @@ def test_netlist_get_up_path():
 	assert not netlist.get_str_path(up_inst_path)
 	assert not netlist.get_str_path(up_inst_path_inv)
 
-def test_netlist_get_pri_paths():
-	pri_paths = netlist.get_pri_paths(net_path)
-	pri_paths_inv = netlist.get_pri_paths(net_path_inv)
-	file_name = str_net_path + '_get_pri_paths'
-	file_name_inv = str_net_path_inv + '_get_pri_paths'
+def test_netlist_get_net_to_pri_paths():
+	pri_paths = netlist.get_net_to_pri_paths(net_path)
+	pri_paths_inv = netlist.get_net_to_pri_paths(net_path_inv)
+	file_name = str_net_path + '_get_net_to_pri_paths'
+	file_name_inv = str_net_path_inv + '_get_net_to_pri_paths'
 	with open(f'out/{file_name}', 'w') as f:
 		for pri_path, terms in pri_paths:
 			f.write(f'{netlist.get_str_path(pri_path)} {terms}\n')
@@ -159,13 +159,13 @@ def test_netlist_get_pri_paths():
 	assert not diff
 	assert not diff_inv
 
-def test_netlist_get_inst_paths():
-	inst_paths = netlist.get_inst_paths(subckt_name)
-	inst_paths_inv = netlist.get_inst_paths(subckt_name_inv)
-	inst_paths_pri = netlist.get_inst_paths(pri_name)
-	file_name = subckt_name + '_get_inst_paths'
-	file_name_inv = subckt_name_inv + '_get_inst_paths'
-	file_name_pri = pri_name + '_get_inst_paths'
+def test_netlist_get_subckt_inst_paths():
+	inst_paths = netlist.get_subckt_inst_paths(subckt_name)
+	inst_paths_inv = netlist.get_subckt_inst_paths(subckt_name_inv)
+	inst_paths_pri = netlist.get_subckt_inst_paths(pri_name)
+	file_name = subckt_name + '_get_subckt_inst_paths'
+	file_name_inv = subckt_name_inv + '_get_subckt_inst_paths'
+	file_name_pri = pri_name + '_get_subckt_inst_paths'
 	with open(f'out/{file_name}', 'w') as f:
 		for i in inst_paths:
 			f.write(netlist.get_str_path(i) + '\n')
@@ -186,19 +186,19 @@ def test_netlist_is_same_net():
 	assert netlist.is_same_net(up_net_path, net_path)
 	assert not netlist.is_same_net(net_path_inv, net_path)
 
-def test_netlist_get_net_path():
-	path_term_0 = netlist.get_net_path(inst_path, 0)
-	path_term_1 = netlist.get_net_path(inst_path, 1)
-	path_term_0_inv = netlist.get_net_path(inst_path_inv, 0)
+def test_netlist_get_net_path_at_term():
+	path_term_0 = netlist.get_net_path_at_term(inst_path, 0)
+	path_term_1 = netlist.get_net_path_at_term(inst_path, 1)
+	path_term_0_inv = netlist.get_net_path_at_term(inst_path_inv, 0)
 	assert netlist.get_str_path(path_term_0) == str_inst_path_term_0
 	assert netlist.get_str_path(path_term_1) == str_inst_path_term_1
 	assert not path_term_0_inv
 
-def test_netlist_get_net_paths():
-	net_paths = netlist.get_net_paths(net_path)
-	net_paths_inv = netlist.get_net_paths(net_path_inv)
-	file_name = str_net_path + '_get_net_paths'
-	file_name_inv = str_net_path_inv + '_get_net_paths'
+def test_netlist_get_hier_net_paths():
+	net_paths = netlist.get_hier_net_paths(net_path)
+	net_paths_inv = netlist.get_hier_net_paths(net_path_inv)
+	file_name = str_net_path + '_get_hier_net_paths'
+	file_name_inv = str_net_path_inv + '_get_hier_net_paths'
 	with open(f'out/{file_name}', 'w') as f:
 		for i in net_paths:
 			f.write(netlist.get_str_path(i) + '\n')
@@ -217,6 +217,15 @@ def test_netlist_short_by_term():
 	file_name = subckt_name + '_res_short_by_term'
 	with open(f'out/{file_name}', 'w') as f:
 		copy_netlist.write(f)
+	diff = sp.getoutput(f'diff out/{file_name} ref/{file_name}')
+	assert not diff
+
+def test_netlist_get_net_to_inst_paths():
+	inst_paths = netlist.get_net_to_inst_paths(net_path, [subckt_name, pri_name])
+	file_name = str_net_path + '_get_net_to_inst_paths'
+	with open(f'out/{file_name}', 'w') as f:
+		for path, terms in inst_paths:
+			f.write(f'{netlist.get_str_path(path)} {terms}\n')
 	diff = sp.getoutput(f'diff out/{file_name} ref/{file_name}')
 	assert not diff
 
